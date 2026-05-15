@@ -1,0 +1,29 @@
+services:
+  - type: worker
+    name: cryptoviz
+    runtime: python
+    buildCommand: |
+      pip install openai websockets aiohttp numpy python-telegram-bot posthog kokoro-onnx soundfile
+      curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+      apt-get install -y nodejs ffmpeg
+      npm install -g pptxgenjs
+    startCommand: python main.py
+    envVars:
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: CLAUDE_BASE_URL
+        value: https://api.tokenrouter.com/v1
+      - key: CLAUDE_MODEL
+        value: anthropic/claude-opus-4.7
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_DEFAULT_CHAT_ID
+        sync: false
+      - key: VOLUME_SPIKE_MULTIPLIER
+        value: "3.0"
+      - key: PRICE_CHANGE_THRESHOLD
+        value: "2.0"
+    disk:
+      name: renders
+      mountPath: /opt/render/project/src/renders
+      sizeGB: 1
