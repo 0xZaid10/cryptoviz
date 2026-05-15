@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+:root {
+  --bg: #050505;
+  --surface: #0d0d0d;
+  --elevated: #141414;
+  --text: #f0f0f0;
+  --text-2: #a0a0a0;
+  --text-3: #555555;
+  --label: #666666;
+  --border: #1a1a1a;
+  --border-s: #0f0f0f;
+  --blue: #0066FF;
+  --tc: #00FF88;
+  --font: 'Inter', -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  --fw-bold:700;
+  --fw-medium:500;
+  --fw-regular:400;
+  --sz-label:12px;
+  --sz-micro:11px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); overflow:hidden; font-family:var(--font); color:var(--text); }
+.scene { position:absolute; top:0; left:0; width:1920px; height:1080px; }
+.cap {
+  position:absolute; bottom:68px; left:50%;
+  transform:translateX(-50%); text-align:center;
+  font-family:var(--font); font-weight:500; font-size:30px;
+  color:rgba(240,235,220,0.94); letter-spacing:-0.005em;
+  background:rgba(5,5,5,0.75); padding:11px 30px; border-radius:100px;
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  z-index:9999; pointer-events:none; white-space:nowrap; max-width:1600px;
+  border:1px solid rgba(255,255,255,0.06);
+}
+
+  /* S1 */
+  #s1 { background: var(--bg); overflow: hidden; }
+
+  /* LED dot matrix background */
+  #s1-led {
+    position: absolute; inset: 0; z-index: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0;
+  }
+
+  /* Animated gradient mesh */
+  #s1-mesh {
+    position: absolute; inset: 0; z-index: 1;
+    overflow: hidden;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0;
+  }
+  #blob1 {
+    width: 800px; height: 600px;
+    top: -100px; left: -200px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--tc) 25%, transparent) 0%, transparent 70%);
+    animation: blob1drift 8s ease-in-out infinite alternate;
+  }
+  #blob2 {
+    width: 600px; height: 500px;
+    bottom: -100px; right: -100px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--blue) 20%, transparent) 0%, transparent 70%);
+    animation: blob2drift 10s ease-in-out infinite alternate;
+  }
+  #blob3 {
+    width: 500px; height: 400px;
+    top: 40%; left: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--tc) 12%, transparent) 0%, transparent 70%);
+    animation: blob3drift 12s ease-in-out infinite alternate;
+  }
+  @keyframes blob1drift { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,60px) scale(1.1); } }
+  @keyframes blob2drift { from { transform: translate(0,0) scale(1); } to { transform: translate(-60px,-40px) scale(1.15); } }
+  @keyframes blob3drift { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-50%,-50%) scale(1.2) rotate(15deg); } }
+
+  /* Vignette */
+  #s1-vignette {
+    position: absolute; inset: 0; z-index: 3;
+    background: radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(5,5,5,0.65) 100%);
+    pointer-events: none;
+  }
+
+  /* HUD corner labels */
+  #s1-hud-tl, #s1-hud-tr, #s1-hud-bl, #s1-hud-br {
+    position: absolute; z-index: 5;
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0;
+  }
+  #s1-hud-tl { top: 48px; left: 60px; }
+  #s1-hud-tr { top: 48px; right: 60px; }
+  #s1-hud-bl { bottom: 48px; left: 60px; }
+  #s1-hud-br { bottom: 48px; right: 60px; }
+  .hud-tag {
+    font-size: 11px; font-weight: var(--fw-medium);
+    color: var(--text-2); letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .hud-sep { color: var(--text-3); font-size: 11px; }
+
+  /* Main content */
+  #s1-content {
+    position: absolute; inset: 0; z-index: 4;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 22px;
+  }
+  #s1-overline {
+    font-size: 13px; font-weight: var(--fw-regular);
+    color: var(--blue); letter-spacing: 0.3em; text-transform: uppercase;
+  }
+  #s1-asset {
+    font-size: 158px; font-weight: var(--fw-bold);
+    color: var(--text); letter-spacing: -0.04em; line-height: 1;
+  }
+  #s1-type {
+    font-size: 20px; font-weight: var(--fw-regular);
+    color: var(--text-3); letter-spacing: 0.22em; text-transform: uppercase;
+  }
+  #s1-price {
+    font-size: 78px; font-weight: var(--fw-bold);
+    color: var(--tc); font-variant-numeric: tabular-nums;
+  }
+  #s1-bar { display: flex; align-items: center; }
+  #s1-ll, #s1-rl { width: 0; height: 2px; background: var(--tc); }
+  #s1-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--tc); margin: 0 14px; opacity: 0;
+    box-shadow: 0 0 20px var(--tc);
+  }
+
+  /* S2 */
+  #s2-hdr {
+    position: absolute; left: 88px; top: 55px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  #s2-htag {
+    font-size: var(--sz-label); color: var(--label);
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  #s2-hprice {
+    font-size: 50px; font-weight: var(--fw-bold);
+    font-variant-numeric: tabular-nums; color: var(--text);
+  }
+  #s2-hchg {
+    font-size: 22px; font-weight: var(--fw-bold); color: var(--tc);
+  }
+  #s2-panel {
+    position: absolute; right: 0; top: 0; height: 1080px;
+    padding: 80px 52px;
+    display: flex; flex-direction: column; justify-content: center; gap: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  .s2-tag {
+    font-size: var(--sz-label); color: var(--label);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+  .s2-stat { padding: 26px 0; }
+  .s2-lbl {
+    font-size: var(--sz-label); color: var(--label);
+    letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .s2-val {
+    font-size: 56px; font-weight: var(--fw-bold);
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .s2-rule { height: 1px; background: var(--border-s); }
+  #s2-badge {
+    margin-top: 32px; padding: 13px 20px;
+    border: 1px solid color-mix(in srgb, var(--tc) 25%, transparent);
+    display: flex; align-items: center; gap: 12px;
+  }
+  #s2-bdot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--tc); flex-shrink: 0;
+  }
+  #s2-btxt {
+    font-size: var(--sz-label); color: var(--tc);
+    letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  #s2-ticker {
+    position: absolute; bottom: 0; left: 0; width: 1920px; height: 42px;
+    background: var(--surface); border-top: 1px solid var(--border);
+    overflow: hidden; display: flex; align-items: center;
+  }
+  #s2-ticker-i {
+    white-space: nowrap; font-size: 12px; color: var(--text-3);
+    letter-spacing: 0.08em; font-variant-numeric: tabular-nums;
+  }
+
+  /* S3 */
+  #s3 { background: var(--bg); overflow: hidden; }
+
+  /* Background mesh */
+  #s3-mesh { position: absolute; inset: 0; overflow: hidden; }
+  .s3-blob {
+    position: absolute; border-radius: 50%;
+    filter: blur(100px); opacity: 0.12;
+  }
+  .s3b1 {
+    width: 900px; height: 700px; top: -200px; left: -100px;
+    background: radial-gradient(circle, var(--tc), transparent 70%);
+  }
+  .s3b2 {
+    width: 700px; height: 600px; bottom: -150px; right: -100px;
+    background: radial-gradient(circle, var(--blue), transparent 70%);
+  }
+
+  /* Scan line */
+  #s3-scan {
+    position: absolute; left: 0; top: -4px; width: 1920px; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--tc), transparent);
+    opacity: 0; z-index: 10;
+  }
+
+  /* HUD bars */
+  #s3-topbar, #s3-botbar {
+    position: absolute; left: 0; width: 1920px;
+    padding: 0 60px; height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    z-index: 5; opacity: 0;
+  }
+  #s3-topbar { top: 0; border-bottom: 1px solid var(--border); }
+  #s3-botbar { bottom: 0; border-top: 1px solid var(--border); border-bottom: none; }
+  .s3-hud {
+    font-size: 11px; font-weight: var(--fw-medium);
+    color: var(--label); letter-spacing: 0.2em; text-transform: uppercase;
+  }
+
+  /* Stat columns */
+  #s3-inner {
+    position: absolute;
+    top: 52px; bottom: 52px; left: 0; right: 0;
+    display: flex; align-items: stretch;
+  }
+  .s3-col {
+    flex: 1; padding: 60px 72px;
+    display: flex; flex-direction: column; gap: 16px;
+    opacity: 0;
+  }
+  .s3-col-divider {
+    width: 1px; background: var(--border);
+    margin: 60px 0; flex-shrink: 0;
+  }
+  .s3-col-header {
+    display: flex; align-items: center; gap: 16px;
+  }
+  .s3-col-num {
+    font-size: 11px; font-weight: var(--fw-bold);
+    color: var(--tc); letter-spacing: 0.15em; font-variant-numeric: tabular-nums;
+  }
+  .s3-col-label {
+    font-size: 11px; font-weight: var(--fw-medium);
+    color: var(--label); letter-spacing: 0.2em; text-transform: uppercase;
+  }
+  .s3-col-rule {
+    height: 1px; background: var(--border); width: 100%;
+  }
+  .s3-col-val {
+    font-size: 88px; font-weight: var(--fw-bold);
+    font-variant-numeric: tabular-nums; line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .s3-col-unit {
+    font-size: 11px; color: var(--label);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin-top: -8px;
+  }
+  .s3-col-sub {
+    font-size: 14px; color: var(--text-3);
+    letter-spacing: 0.04em; margin-top: 8px;
+  }
+
+  /* S4 */
+  #s4-eye {
+    font-size: var(--sz-label); color: var(--text-3);
+    letter-spacing: 0.25em; text-transform: uppercase;
+  }
+  #s4-txt {
+    font-size: 56px; font-weight: var(--fw-bold); color: var(--text);
+    text-align: center; max-width: 1500px; line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  #s4-txt em { color: var(--tc); font-style: normal; }
+  #s4-rule { width: 0; height: 1px; background: var(--border); }
+  #s4-brand {
+    font-size: var(--sz-label); color: var(--text-3);
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+
+  .shimmer-sweep-target { position:relative; display:inline-block; }
+  .shimmer-sweep-target .shimmer-mask {
+    position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;
+    background:linear-gradient(120deg,
+      transparent 0%,
+      transparent calc(var(--shimmer-pos,-20%) - 10%),
+      rgba(255,255,255,0.55) var(--shimmer-pos,-20%),
+      transparent calc(var(--shimmer-pos,-20%) + 10%),
+      transparent 100%);
+    mix-blend-mode:overlay;
+  }
+</style>
+</head>
+<body>
+<div data-composition-id="root"
+     data-start="0" data-duration="38"
+     data-width="1920" data-height="1080"
+     style="position:relative;width:1920px;height:1080px;
+            overflow:hidden;background:var(--bg);">
+
+  
+<!-- S0: Alert flash -->
+<div id="s0" class="scene clip" data-start="0" data-duration="0.5" data-track-index="0"
+     style="background:var(--tc);">
+  <div id="s0-scan" style="
+    position:absolute; top:0; left:0; width:1920px; height:4px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent);
+  "></div>
+</div>
+  
+<!-- S1: Title card -->
+<div id="s1" class="scene clip" data-start="0.5" data-duration="6.5" data-track-index="1">
+
+  <!-- LED dot matrix layer -->
+  <div id="s1-led"></div>
+
+  <!-- Animated gradient mesh blobs -->
+  <div id="s1-mesh">
+    <div class="blob" id="blob1"></div>
+    <div class="blob" id="blob2"></div>
+    <div class="blob" id="blob3"></div>
+  </div>
+
+  <!-- Vignette -->
+  <div id="s1-vignette"></div>
+
+  <!-- Particle field -->
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:2;">
+    <svg width="1920" height="1080" style="position:absolute;inset:0;">
+      <circle id="p0" cx="941" cy="733" r="1.5" fill="#00FF88" opacity="0.10"/>
+      <circle id="p1" cx="617" cy="110" r="2.5" fill="#00FF88" opacity="0.12"/>
+      <circle id="p2" cx="50" cy="672" r="1.5" fill="#00FF88" opacity="0.10"/>
+      <circle id="p3" cx="1803" cy="598" r="2.3" fill="#00FF88" opacity="0.12"/>
+      <circle id="p4" cx="354" cy="1004" r="2.9" fill="#00FF88" opacity="0.14"/>
+      <circle id="p5" cx="954" cy="147" r="1.4" fill="#00FF88" opacity="0.09"/>
+      <circle id="p6" cx="614" cy="1049" r="3.2" fill="#00FF88" opacity="0.14"/>
+      <circle id="p7" cx="852" cy="293" r="2.9" fill="#00FF88" opacity="0.14"/>
+      <circle id="p8" cx="638" cy="541" r="2.8" fill="#00FF88" opacity="0.14"/>
+      <circle id="p9" cx="941" cy="157" r="2.7" fill="#00FF88" opacity="0.13"/>
+      <circle id="p10" cx="1285" cy="712" r="1.7" fill="#00FF88" opacity="0.10"/>
+      <circle id="p11" cx="943" cy="281" r="3.0" fill="#00FF88" opacity="0.14"/>
+      <circle id="p12" cx="8" cy="1016" r="2.5" fill="#00FF88" opacity="0.13"/>
+      <circle id="p13" cx="41" cy="780" r="2.9" fill="#00FF88" opacity="0.14"/>
+      <circle id="p14" cx="1579" cy="45" r="3.1" fill="#00FF88" opacity="0.14"/>
+      <circle id="p15" cx="1295" cy="612" r="2.0" fill="#00FF88" opacity="0.11"/>
+      <circle id="p16" cx="1865" cy="414" r="1.0" fill="#00FF88" opacity="0.08"/>
+      <circle id="p17" cx="897" cy="917" r="0.9" fill="#00FF88" opacity="0.08"/>
+      <circle id="p18" cx="1824" cy="711" r="1.6" fill="#00FF88" opacity="0.10"/>
+      <circle id="p19" cx="834" cy="636" r="2.7" fill="#00FF88" opacity="0.13"/>
+      <circle id="p20" cx="1265" cy="337" r="1.6" fill="#00FF88" opacity="0.10"/>
+      <circle id="p21" cx="598" cy="1026" r="3.2" fill="#00FF88" opacity="0.15"/>
+      <circle id="p22" cx="359" cy="362" r="1.4" fill="#00FF88" opacity="0.09"/>
+      <circle id="p23" cx="745" cy="304" r="2.7" fill="#00FF88" opacity="0.13"/>
+      <circle id="p24" cx="1159" cy="389" r="1.0" fill="#00FF88" opacity="0.08"/>
+      <circle id="p25" cx="1451" cy="146" r="1.9" fill="#00FF88" opacity="0.11"/>
+      <circle id="p26" cx="1224" cy="898" r="3.0" fill="#00FF88" opacity="0.14"/>
+      <circle id="p27" cx="188" cy="481" r="2.2" fill="#00FF88" opacity="0.12"/>
+      <circle id="p28" cx="280" cy="857" r="2.4" fill="#00FF88" opacity="0.12"/>
+      <circle id="p29" cx="1056" cy="781" r="1.7" fill="#00FF88" opacity="0.10"/>
+      <circle id="p30" cx="1171" cy="346" r="1.4" fill="#00FF88" opacity="0.09"/>
+      <circle id="p31" cx="1888" cy="900" r="1.7" fill="#00FF88" opacity="0.10"/>
+      <circle id="p32" cx="689" cy="209" r="1.7" fill="#00FF88" opacity="0.10"/>
+      <circle id="p33" cx="1137" cy="79" r="1.2" fill="#00FF88" opacity="0.09"/>
+      <circle id="p34" cx="1271" cy="377" r="3.2" fill="#00FF88" opacity="0.14"/>
+      <circle id="p35" cx="1663" cy="786" r="2.2" fill="#00FF88" opacity="0.12"/>
+      <circle id="p36" cx="1110" cy="291" r="2.8" fill="#00FF88" opacity="0.14"/>
+      <circle id="p37" cx="426" cy="528" r="0.8" fill="#00FF88" opacity="0.07"/>
+      <circle id="p38" cx="91" cy="374" r="2.8" fill="#00FF88" opacity="0.13"/>
+      <circle id="p39" cx="569" cy="634" r="2.8" fill="#00FF88" opacity="0.13"/>
+      <circle id="p40" cx="1295" cy="279" r="2.2" fill="#00FF88" opacity="0.12"/>
+      <circle id="p41" cx="553" cy="259" r="2.1" fill="#00FF88" opacity="0.11"/>
+      <circle id="p42" cx="1834" cy="655" r="1.8" fill="#00FF88" opacity="0.11"/>
+      <circle id="p43" cx="1727" cy="803" r="1.1" fill="#00FF88" opacity="0.08"/>
+      <circle id="p44" cx="1608" cy="1025" r="1.7" fill="#00FF88" opacity="0.10"/>
+      <circle id="p45" cx="1548" cy="777" r="1.0" fill="#00FF88" opacity="0.08"/>
+      <circle id="p46" cx="197" cy="4" r="1.2" fill="#00FF88" opacity="0.09"/>
+      <circle id="p47" cx="729" cy="769" r="2.5" fill="#00FF88" opacity="0.13"/>
+      <circle id="p48" cx="1906" cy="44" r="1.5" fill="#00FF88" opacity="0.09"/>
+      <circle id="p49" cx="1669" cy="542" r="1.8" fill="#00FF88" opacity="0.10"/>
+      <circle id="p50" cx="1604" cy="536" r="1.3" fill="#00FF88" opacity="0.09"/>
+      <circle id="p51" cx="442" cy="29" r="1.1" fill="#00FF88" opacity="0.08"/>
+      <circle id="p52" cx="1463" cy="43" r="1.1" fill="#00FF88" opacity="0.08"/>
+      <circle id="p53" cx="1722" cy="192" r="3.2" fill="#00FF88" opacity="0.14"/>
+      <circle id="p54" cx="955" cy="987" r="2.6" fill="#00FF88" opacity="0.13"/>
+    </svg>
+  </div>
+
+  <!-- HUD corner labels -->
+  <div id="s1-hud-tl">
+    <span class="hud-tag">CRYPTOVIZ · LIVE ALERT</span>
+  </div>
+  <div id="s1-hud-tr">
+    <span class="hud-tag">ETH/USDT</span>
+    <span class="hud-sep">·</span>
+    <span class="hud-tag">VOL 4.2x</span>
+  </div>
+  <div id="s1-hud-bl">
+    <span class="hud-tag">VOLUME SPIKE</span>
+  </div>
+  <div id="s1-hud-br">
+    <span class="hud-tag">▲ 2.30%</span>
+  </div>
+
+  <!-- Main content -->
+  <div id="s1-content">
+    <div id="s1-overline">CryptoViz · Live Alert</div>
+    <div id="s1-asset">ETH</div>
+    <div id="s1-type">VOLUME SPIKE</div>
+    <div id="s1-price">▲ $3,421.50</div>
+    <div id="s1-bar">
+      <div id="s1-ll"></div>
+      <div id="s1-dot"></div>
+      <div id="s1-rl"></div>
+    </div>
+  </div>
+</div>
+  <div class="clip" data-composition-src="compositions/glitch.html" data-start="6.2" data-duration="0.8" data-track-index="10" data-width="1920" data-height="1080"></div>
+  
+<!-- S2: Chart -->
+<div id="s2" class="scene clip" data-start="7" data-duration="17" data-track-index="2"
+     style="background:var(--bg);">
+
+  <!-- Chart header -->
+  <div id="s2-hdr">
+    <div id="s2-htag">ETH / USDT · 1H Candlestick</div>
+    <div style="display:flex;align-items:baseline;gap:20px;">
+      <div id="s2-hprice">$3,421.50</div>
+      <div id="s2-hchg">▲ 2.30%</div>
+    </div>
+  </div>
+
+  <!-- SVG Chart -->
+  <svg id="s2-chart" width="1200" height="700"
+       viewBox="0 0 1200 700"
+       style="position:absolute;left:0;top:155px;">
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="#00FF88" stop-opacity="0.16"/>
+        <stop offset="100%" stop-color="#00FF88" stop-opacity="0.01"/>
+      </linearGradient>
+    </defs>
+    <line stroke="var(--border-s)" stroke-width="1" x1="88" y1="65" x2="1112" y2="65"/> <line stroke="var(--border-s)" stroke-width="1" x1="88" y1="175" x2="1112" y2="175"/> <line stroke="var(--border-s)" stroke-width="1" x1="88" y1="285" x2="1112" y2="285"/> <line stroke="var(--border-s)" stroke-width="1" x1="88" y1="395" x2="1112" y2="395"/> <line stroke="var(--border-s)" stroke-width="1" x1="88" y1="505" x2="1112" y2="505"/>
+    <text fill="var(--label)" font-size="12" font-family="Inter,sans-serif" text-anchor="end" x="78" y="70">$3,423</text><text fill="var(--label)" font-size="12" font-family="Inter,sans-serif" text-anchor="end" x="78" y="290">$3,402</text><text fill="var(--label)" font-size="12" font-family="Inter,sans-serif" text-anchor="end" x="78" y="510">$3,380</text>
+    <!-- Area fill -->
+    <path id="s2-area" d="M 88 505 L 88.0 505.0 L 108.9 484.5 L 129.8 453.8 L 150.7 474.3 L 171.6 433.4 L 192.5 402.7 L 213.4 423.1 L 234.3 382.2 L 255.2 351.5 L 276.1 372.0 L 297.0 331.0 L 317.9 300.3 L 338.8 320.8 L 359.7 279.9 L 380.6 249.2 L 401.5 269.7 L 422.4 228.7 L 443.3 198.0 L 464.2 218.5 L 485.1 177.6 L 506.0 146.9 L 526.9 167.3 L 547.8 136.6 L 568.7 116.2 L 589.6 146.9 L 610.4 105.9 L 631.3 85.5 L 652.2 105.9 L 673.1 75.2 L 694.0 85.5 L 714.9 65.0 L 735.8 85.5 L 756.7 95.7 L 777.6 75.2 L 798.5 85.5 L 819.4 75.2 L 840.3 85.5 L 861.2 95.7 L 882.1 85.5 L 903.0 75.2 L 923.9 85.5 L 944.8 85.5 L 965.7 85.5 L 986.6 75.2 L 1007.5 85.5 L 1028.4 85.5 L 1049.3 85.5 L 1070.2 85.5 L 1091.1 85.5 L 1112.0 85.5 L 1112 505 Z" fill="url(#areaGrad)" opacity="0"/>
+    <!-- Moving average -->
+    <polyline id="s2-ma" fill="none" stroke="var(--blue)" stroke-width="1.2"
+              stroke-dasharray="4,3" opacity="0.5"
+              points="88.0,505.0 108.9,494.8 129.8,481.1 150.7,479.4 171.6,470.2 192.5,459.0 213.4,453.8 234.3,444.9 255.2,434.5 276.1,428.3 297.0,410.9 317.9,392.4 338.8,379.1 359.7,359.7 380.6,341.3 401.5,328.0 422.4,308.5 443.3,290.1 464.2,276.8 485.1,257.4 506.0,239.0 526.9,225.7 547.8,207.2 568.7,190.9 589.6,180.6 610.4,164.3 631.3,149.9 652.2,140.7 673.1,126.4 694.0,117.2 714.9,109.0 735.8,100.8 756.7,96.7 777.6,92.6 798.5,86.5 819.4,83.4 840.3,83.4 861.2,82.4 882.1,83.4 903.0,82.4 923.9,84.4 944.8,84.4 965.7,83.4 986.6,83.4 1007.5,83.4 1028.4,84.4 1049.3,84.4 1070.2,83.4 1091.1,83.4 1112.0,84.4"/>
+    <!-- Candlesticks -->
+    <g class="candle" opacity="0"><line x1="108.5" y1="484.5" x2="108.5" y2="505.0" stroke="#00FF88" stroke-width="1.2"/><rect x="93.7" y="484.5" width="29.5" height="20.5" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="88.0" y="656.6" width="28.7" height="28.4" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="149.4" y1="453.8" x2="149.4" y2="474.3" stroke="#FF3344" stroke-width="1.2"/><rect x="134.7" y="453.8" width="29.5" height="20.5" fill="#FF3344" opacity="0.9"/><rect class="vbar" x="129.0" y="657.1" width="28.7" height="27.9" fill="#FF3344" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="190.4" y1="402.7" x2="190.4" y2="433.4" stroke="#00FF88" stroke-width="1.2"/><rect x="175.7" y="402.7" width="29.5" height="30.7" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="169.9" y="656.0" width="28.7" height="29.0" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="231.4" y1="382.2" x2="231.4" y2="423.1" stroke="#00FF88" stroke-width="1.2"/><rect x="216.6" y="382.2" width="29.5" height="40.9" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="210.9" y="658.0" width="28.7" height="27.0" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="272.3" y1="351.5" x2="272.3" y2="372.0" stroke="#FF3344" stroke-width="1.2"/><rect x="257.6" y="351.5" width="29.5" height="20.5" fill="#FF3344" opacity="0.9"/><rect class="vbar" x="251.8" y="655.7" width="28.7" height="29.3" fill="#FF3344" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="313.3" y1="300.3" x2="313.3" y2="331.0" stroke="#00FF88" stroke-width="1.2"/><rect x="298.5" y="300.3" width="29.5" height="30.7" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="292.8" y="656.8" width="28.7" height="28.2" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="354.2" y1="279.9" x2="354.2" y2="320.8" stroke="#00FF88" stroke-width="1.2"/><rect x="339.5" y="279.9" width="29.5" height="40.9" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="333.8" y="656.3" width="28.7" height="28.7" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="395.2" y1="249.2" x2="395.2" y2="269.7" stroke="#FF3344" stroke-width="1.2"/><rect x="380.5" y="249.2" width="29.5" height="20.5" fill="#FF3344" opacity="0.9"/><rect class="vbar" x="374.7" y="657.4" width="28.7" height="27.6" fill="#FF3344" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="436.2" y1="198.0" x2="436.2" y2="228.7" stroke="#00FF88" stroke-width="1.2"/><rect x="421.4" y="198.0" width="29.5" height="30.7" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="415.7" y="655.4" width="28.7" height="29.6" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="477.1" y1="177.6" x2="477.1" y2="218.5" stroke="#00FF88" stroke-width="1.2"/><rect x="462.4" y="177.6" width="29.5" height="40.9" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="456.6" y="657.1" width="28.7" height="27.9" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="518.1" y1="146.9" x2="518.1" y2="167.3" stroke="#FF3344" stroke-width="1.2"/><rect x="503.3" y="146.9" width="29.5" height="20.5" fill="#FF3344" opacity="0.9"/><rect class="vbar" x="497.6" y="656.0" width="28.7" height="29.0" fill="#FF3344" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="559.0" y1="116.2" x2="559.0" y2="136.6" stroke="#00FF88" stroke-width="1.2"/><rect x="544.3" y="116.2" width="29.5" height="20.5" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="538.6" y="657.7" width="28.7" height="27.3" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="600.0" y1="105.9" x2="600.0" y2="146.9" stroke="#00FF88" stroke-width="1.2"/><rect x="585.3" y="105.9" width="29.5" height="40.9" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="579.5" y="655.7" width="28.7" height="29.3" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="641.0" y1="85.5" x2="641.0" y2="105.9" stroke="#FF3344" stroke-width="1.2"/><rect x="626.2" y="85.5" width="29.5" height="20.5" fill="#FF3344" opacity="0.9"/><rect class="vbar" x="620.5" y="657.4" width="28.7" height="27.6" fill="#FF3344" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="681.9" y1="75.2" x2="681.9" y2="85.5" stroke="#FF3344" stroke-width="1.2"/><rect x="667.2" y="75.2" width="29.5" height="10.2" fill="#FF3344" opacity="0.9"/><rect class="vbar" x="661.4" y="633.8" width="28.7" height="51.2" fill="#FF3344" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="722.9" y1="65.0" x2="722.9" y2="85.5" stroke="#FF3344" stroke-width="1.2"/><rect x="708.1" y="65.0" width="29.5" height="20.5" fill="#FF3344" opacity="0.9"/><rect class="vbar" x="702.4" y="596.8" width="28.7" height="88.2" fill="#FF3344" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="763.8" y1="75.2" x2="763.8" y2="95.7" stroke="#00FF88" stroke-width="1.2"/><rect x="749.1" y="75.2" width="29.5" height="20.5" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="743.4" y="565.6" width="28.7" height="119.4" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="804.8" y1="75.2" x2="804.8" y2="85.5" stroke="#00FF88" stroke-width="1.2"/><rect x="790.1" y="75.2" width="29.5" height="10.2" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="784.3" y="566.1" width="28.7" height="118.9" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="845.8" y1="85.5" x2="845.8" y2="95.7" stroke="#FF3344" stroke-width="1.2"/><rect x="831.0" y="85.5" width="29.5" height="10.2" fill="#FF3344" opacity="0.9"/><rect class="vbar" x="825.3" y="565.9" width="28.7" height="119.1" fill="#FF3344" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="886.7" y1="75.2" x2="886.7" y2="85.5" stroke="#00FF88" stroke-width="1.2"/><rect x="872.0" y="75.2" width="29.5" height="10.2" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="866.2" y="565.6" width="28.7" height="119.4" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="927.7" y1="85.5" x2="927.7" y2="85.5" stroke="#00FF88" stroke-width="1.2"/><rect x="912.9" y="85.5" width="29.5" height="2.0" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="907.2" y="565.9" width="28.7" height="119.1" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="968.6" y1="75.2" x2="968.6" y2="85.5" stroke="#00FF88" stroke-width="1.2"/><rect x="953.9" y="75.2" width="29.5" height="10.2" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="948.2" y="565.6" width="28.7" height="119.4" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="1009.6" y1="85.5" x2="1009.6" y2="85.5" stroke="#00FF88" stroke-width="1.2"/><rect x="994.9" y="85.5" width="29.5" height="2.0" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="989.1" y="565.9" width="28.7" height="119.1" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="1050.6" y1="85.5" x2="1050.6" y2="85.5" stroke="#00FF88" stroke-width="1.2"/><rect x="1035.8" y="85.5" width="29.5" height="2.0" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="1030.1" y="565.6" width="28.7" height="119.4" fill="#00FF88" opacity="0.35"/></g>
+      <g class="candle" opacity="0"><line x1="1091.5" y1="85.5" x2="1091.5" y2="85.5" stroke="#00FF88" stroke-width="1.2"/><rect x="1076.8" y="85.5" width="29.5" height="2.0" fill="#00FF88" opacity="0.9"/><rect class="vbar" x="1071.0" y="565.9" width="28.7" height="119.1" fill="#00FF88" opacity="0.35"/></g>
+    <!-- Current price level -->
+    <line stroke="var(--blue)" stroke-width="1" stroke-dasharray="5,4"
+          x1="88" y1="80.3"
+          x2="1112" y2="80.3"/>
+    <rect fill="var(--blue)" rx="2"
+          x="1114" y="69"
+          width="108" height="22"/>
+    <text fill="var(--text)" font-size="13" font-weight="700"
+          font-family="Inter,sans-serif"
+          x="1120" y="85">
+      $3,422
+    </text>
+  </svg>
+
+  <!-- Vertical divider -->
+  <div style="position:absolute;left:1200px;top:40px;width:1px;height:1000px;background:var(--border);"></div>
+
+  <!-- Data panel -->
+  <div id="s2-panel" style="width:720px;">
+    <div class="s2-tag">ETH/USDT · 1H</div>
+    <div class="s2-stat" id="sp1">
+      <div class="s2-lbl">Current Price</div>
+      <div class="s2-val" style="color:var(--text);">$3,421.50</div>
+    </div>
+    <div class="s2-rule"></div>
+    <div class="s2-stat" id="sp2">
+      <div class="s2-lbl">Price Change</div>
+      <div class="s2-val" style="color:var(--tc);">▲ 2.30%</div>
+    </div>
+    <div class="s2-rule"></div>
+    <div class="s2-stat" id="sp3">
+      <div class="s2-lbl">Volume Spike</div>
+      <div class="s2-val" style="color:var(--blue);">4.2x</div>
+    </div>
+    <div id="s2-badge">
+      <div id="s2-bdot"></div>
+      <div id="s2-btxt">BULLISH SIGNAL</div>
+    </div>
+  </div>
+
+  <!-- Ticker tape -->
+  <div id="s2-ticker">
+    <div id="s2-ticker-i">  ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●    ETH/USDT  $3,421.50  ▲2.30%  ●  VOL 4.2x  ●  </div>
+  </div>
+</div>
+  <div class="clip" data-composition-src="compositions/chromatic-radial-split.html" data-start="23.2" data-duration="0.8" data-track-index="11" data-width="1920" data-height="1080"></div>
+  
+<!-- S3: Context breakdown -->
+<div id="s3" class="scene clip" data-start="24" data-duration="9" data-track-index="3">
+
+  <!-- Background mesh -->
+  <div id="s3-mesh">
+    <div class="s3-blob s3b1"></div>
+    <div class="s3-blob s3b2"></div>
+  </div>
+
+  <!-- Scan line sweep -->
+  <div id="s3-scan"></div>
+
+  <!-- Top HUD bar -->
+  <div id="s3-topbar">
+    <span class="s3-hud">CRYPTOVIZ // MARKET ANALYSIS</span>
+    <span class="s3-hud s3-hud-right">ETH/USDT · 1H · LIVE</span>
+  </div>
+
+  <!-- Three stat columns -->
+  <div id="s3-inner">
+
+    <div class="s3-col" id="s3c1">
+      <div class="s3-col-header">
+        <span class="s3-col-num">01</span>
+        <span class="s3-col-label">Session High</span>
+      </div>
+      <div class="s3-col-rule"></div>
+      <div class="s3-col-val" style="color:var(--tc);">$3,423</div>
+      <div class="s3-col-unit">USD</div>
+      <div class="s3-col-sub">▲ 2.30% confirmed move</div>
+    </div>
+
+    <div class="s3-col-divider"></div>
+
+    <div class="s3-col" id="s3c2">
+      <div class="s3-col-header">
+        <span class="s3-col-num">02</span>
+        <span class="s3-col-label">Volume Spike</span>
+      </div>
+      <div class="s3-col-rule"></div>
+      <div class="s3-col-val" style="color:var(--blue);">4.2x</div>
+      <div class="s3-col-unit">ABOVE BASELINE</div>
+      <div class="s3-col-sub">abnormal accumulation detected</div>
+    </div>
+
+    <div class="s3-col-divider"></div>
+
+    <div class="s3-col" id="s3c3">
+      <div class="s3-col-header">
+        <span class="s3-col-num">03</span>
+        <span class="s3-col-label">Signal</span>
+      </div>
+      <div class="s3-col-rule"></div>
+      <div class="s3-col-val" style="color:var(--tc);font-size:60px;">BULLISH</div>
+      <div class="s3-col-unit">MARKET CONDITION</div>
+      <div class="s3-col-sub">ETH · volume-confirmed</div>
+    </div>
+
+  </div>
+
+  <!-- Bottom HUD bar -->
+  <div id="s3-botbar">
+    <span class="s3-hud">RANGE $3,380 – $3,423</span>
+    <span class="s3-hud s3-hud-right">MOVE 2.30% · SPIKE 4.2x AVG</span>
+  </div>
+
+</div>
+  <div class="clip" data-composition-src="compositions/cinematic-zoom.html" data-start="32.2" data-duration="0.8" data-track-index="12" data-width="1920" data-height="1080"></div>
+  
+<!-- S4: Summary (FINAL) -->
+<div id="s4" class="scene clip" data-start="33" data-duration="5" data-track-index="4"
+     style="background:var(--bg);display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:36px;">
+  <div id="s4-eye">CryptoViz · Market Intelligence</div>
+  <div id="s4-txt">
+    ETH volume alert —
+    <em>▲ 2.3%</em> on <em>4.2x</em> average volume
+  </div>
+  <div id="s4-rule"></div>
+  <div id="s4-brand">Powered by HeyGen Hyperframes</div>
+  <!-- Fade to black overlay -->
+  <div id="s4-ov" style="position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;"></div>
+</div>
+
+  <!-- Global overlays (on top of everything except captions) -->
+  
+<div id="hf-vignette" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:90;
+  background:radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.72) 100%);"></div>
+  
+<div id="grain-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:98;">
+  <div class="grain-texture"></div>
+</div>
+<style>
+  @keyframes hf-grain-noise {
+    0%,100% { transform:translate(0,0); }
+    10%  { transform:translate(-5%,-5%); }
+    20%  { transform:translate(-10%,5%); }
+    30%  { transform:translate(5%,-10%); }
+    40%  { transform:translate(-5%,15%); }
+    50%  { transform:translate(-10%,5%); }
+    60%  { transform:translate(15%,0); }
+    70%  { transform:translate(0,10%); }
+    80%  { transform:translate(-15%,0); }
+    90%  { transform:translate(10%,5%); }
+  }
+  #grain-overlay .grain-texture {
+    position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity:0.12;
+    animation:hf-grain-noise 0.5s steps(1) infinite;
+  }
+</style>
+
+  <!-- Captions -->
+  <div class="cap clip" data-start="7.040" data-duration="4.000" data-track-index="50">Ethoreum is showing unusual activity right now.</div>
+  <div class="cap clip" data-start="11.080" data-duration="5.240" data-track-index="51">The price sits at $3,421. That's up</div>
+  <div class="cap clip" data-start="16.320" data-duration="3.630" data-track-index="52">2.3% on the session. But the real</div>
+  <div class="cap clip" data-start="19.950" data-duration="3.340" data-track-index="53">signal is volume. ETH is trading at</div>
+  <div class="cap clip" data-start="23.290" data-duration="3.910" data-track-index="54">4.2 times its normal volume. This kind</div>
+  <div class="cap clip" data-start="27.200" data-duration="2.490" data-track-index="55">of surge often precedes a larger directional</div>
+  <div class="cap clip" data-start="30.730" data-duration="4.430" data-track-index="56">move. Watch the 3,450 level. A clean</div>
+  <div class="cap clip" data-start="35.160" data-duration="2.680" data-track-index="57">break above it confirms bullish continuation.</div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script>
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({ paused: true });
+
+  // S0: Alert flash
+  tl.from("#s0",     { opacity:0, duration:0.04 }, 0);
+  tl.to("#s0-scan",  { y:1080, duration:0.42, ease:"power2.in" }, 0.05);
+  tl.to("#s0",       { opacity:0, duration:0.1 }, 0.38);
+
+  // S1: Title card
+  // Blobs fade in
+  tl.to(".blob", { opacity:1, duration:1.2, ease:"power2.out", stagger:0.2 }, 0.5);
+  // HUD labels
+  tl.to("#s1-hud-tl", { opacity:1, duration:0.4, ease:"power2.out" }, 0.6);
+  tl.to("#s1-hud-tr", { opacity:1, duration:0.4, ease:"power2.out" }, 0.7);
+  tl.to("#s1-hud-bl", { opacity:1, duration:0.4, ease:"power2.out" }, 0.8);
+  tl.to("#s1-hud-br", { opacity:1, duration:0.4, ease:"power2.out" }, 0.9);
+  // Particles
+  tl.to("#p0", {y:-71, opacity:0, duration:4.0, ease:"none", repeat:1}, 0.50);
+  tl.to("#p1", {y:-73, opacity:0, duration:4.1, ease:"none", repeat:1}, 0.52);
+  tl.to("#p2", {y:-88, opacity:0, duration:4.6, ease:"none", repeat:1}, 0.53);
+  tl.to("#p3", {y:-85, opacity:0, duration:4.5, ease:"none", repeat:1}, 0.55);
+  tl.to("#p4", {y:-96, opacity:0, duration:4.9, ease:"none", repeat:1}, 0.57);
+  tl.to("#p5", {y:-98, opacity:0, duration:4.9, ease:"none", repeat:1}, 0.58);
+  tl.to("#p6", {y:-82, opacity:0, duration:4.4, ease:"none", repeat:1}, 0.60);
+  tl.to("#p7", {y:-79, opacity:0, duration:4.3, ease:"none", repeat:1}, 0.61);
+  tl.to("#p8", {y:-66, opacity:0, duration:3.9, ease:"none", repeat:1}, 0.63);
+  tl.to("#p9", {y:-59, opacity:0, duration:3.6, ease:"none", repeat:1}, 0.65);
+  tl.to("#p10", {y:-68, opacity:0, duration:3.9, ease:"none", repeat:1}, 0.66);
+  tl.to("#p11", {y:-96, opacity:0, duration:4.9, ease:"none", repeat:1}, 0.68);
+  tl.to("#p12", {y:-81, opacity:0, duration:4.4, ease:"none", repeat:1}, 0.70);
+  tl.to("#p13", {y:-92, opacity:0, duration:4.7, ease:"none", repeat:1}, 0.71);
+  tl.to("#p14", {y:-97, opacity:0, duration:4.9, ease:"none", repeat:1}, 0.73);
+  tl.to("#p15", {y:-82, opacity:0, duration:4.4, ease:"none", repeat:1}, 0.75);
+  tl.to("#p16", {y:-69, opacity:0, duration:4.0, ease:"none", repeat:1}, 0.76);
+  tl.to("#p17", {y:-72, opacity:0, duration:4.1, ease:"none", repeat:1}, 0.78);
+  tl.to("#p18", {y:-70, opacity:0, duration:4.0, ease:"none", repeat:1}, 0.79);
+  tl.to("#p19", {y:-69, opacity:0, duration:4.0, ease:"none", repeat:1}, 0.81);
+  tl.to("#p20", {y:-78, opacity:0, duration:4.3, ease:"none", repeat:1}, 0.83);
+  tl.to("#p21", {y:-71, opacity:0, duration:4.0, ease:"none", repeat:1}, 0.84);
+  tl.to("#p22", {y:-94, opacity:0, duration:4.8, ease:"none", repeat:1}, 0.86);
+  tl.to("#p23", {y:-80, opacity:0, duration:4.3, ease:"none", repeat:1}, 0.88);
+  tl.to("#p24", {y:-64, opacity:0, duration:3.8, ease:"none", repeat:1}, 0.89);
+  tl.to("#p25", {y:-79, opacity:0, duration:4.3, ease:"none", repeat:1}, 0.91);
+  tl.to("#p26", {y:-66, opacity:0, duration:3.9, ease:"none", repeat:1}, 0.93);
+  tl.to("#p27", {y:-78, opacity:0, duration:4.3, ease:"none", repeat:1}, 0.94);
+  tl.to("#p28", {y:-69, opacity:0, duration:4.0, ease:"none", repeat:1}, 0.96);
+  tl.to("#p29", {y:-86, opacity:0, duration:4.5, ease:"none", repeat:1}, 0.97);
+  tl.to("#p30", {y:-87, opacity:0, duration:4.6, ease:"none", repeat:1}, 0.99);
+  tl.to("#p31", {y:-67, opacity:0, duration:3.9, ease:"none", repeat:1}, 1.01);
+  tl.to("#p32", {y:-89, opacity:0, duration:4.6, ease:"none", repeat:1}, 1.02);
+  tl.to("#p33", {y:-83, opacity:0, duration:4.4, ease:"none", repeat:1}, 1.04);
+  tl.to("#p34", {y:-92, opacity:0, duration:4.7, ease:"none", repeat:1}, 1.06);
+  tl.to("#p35", {y:-72, opacity:0, duration:4.1, ease:"none", repeat:1}, 1.07);
+  tl.to("#p36", {y:-84, opacity:0, duration:4.5, ease:"none", repeat:1}, 1.09);
+  tl.to("#p37", {y:-65, opacity:0, duration:3.8, ease:"none", repeat:1}, 1.11);
+  tl.to("#p38", {y:-99, opacity:0, duration:5.0, ease:"none", repeat:1}, 1.12);
+  tl.to("#p39", {y:-87, opacity:0, duration:4.6, ease:"none", repeat:1}, 1.14);
+  tl.to("#p40", {y:-73, opacity:0, duration:4.1, ease:"none", repeat:1}, 1.15);
+  tl.to("#p41", {y:-99, opacity:0, duration:5.0, ease:"none", repeat:1}, 1.17);
+  tl.to("#p42", {y:-73, opacity:0, duration:4.1, ease:"none", repeat:1}, 1.19);
+  tl.to("#p43", {y:-83, opacity:0, duration:4.4, ease:"none", repeat:1}, 1.20);
+  tl.to("#p44", {y:-98, opacity:0, duration:4.9, ease:"none", repeat:1}, 1.22);
+  tl.to("#p45", {y:-84, opacity:0, duration:4.5, ease:"none", repeat:1}, 1.24);
+  tl.to("#p46", {y:-70, opacity:0, duration:4.0, ease:"none", repeat:1}, 1.25);
+  tl.to("#p47", {y:-73, opacity:0, duration:4.1, ease:"none", repeat:1}, 1.27);
+  tl.to("#p48", {y:-78, opacity:0, duration:4.3, ease:"none", repeat:1}, 1.29);
+  tl.to("#p49", {y:-80, opacity:0, duration:4.3, ease:"none", repeat:1}, 1.30);
+  tl.to("#p50", {y:-99, opacity:0, duration:5.0, ease:"none", repeat:1}, 1.32);
+  tl.to("#p51", {y:-63, opacity:0, duration:3.8, ease:"none", repeat:1}, 1.33);
+  tl.to("#p52", {y:-100, opacity:0, duration:5.0, ease:"none", repeat:1}, 1.35);
+  tl.to("#p53", {y:-67, opacity:0, duration:3.9, ease:"none", repeat:1}, 1.37);
+  tl.to("#p54", {y:-96, opacity:0, duration:4.9, ease:"none", repeat:1}, 1.38);
+  // Main content
+  tl.from("#s1-overline", { y:18, opacity:0, duration:0.4, ease:"expo.out" }, 0.6);
+  tl.from("#s1-asset",    { y:80, opacity:0, skewY:2, duration:0.55, ease:"expo.out" }, 0.75);
+  tl.to("#s1-asset", { textShadow:"0 0 110px var(--tc)", duration:0.3, yoyo:true, repeat:1, ease:"power2.out" }, 1.1);
+  tl.from("#s1-type",  { y:18, opacity:0, duration:0.4, ease:"power3.out" }, 1.05);
+  tl.from("#s1-price", { y:28, opacity:0, duration:0.45, ease:"power2.out" }, 1.22);
+  tl.to("#s1-ll",  { width:300, duration:0.55, ease:"expo.out" }, 1.42);
+  tl.to("#s1-dot", { opacity:1, duration:0.2, ease:"back.out(2)" }, 1.86);
+  tl.to("#s1-rl",  { width:300, duration:0.55, ease:"expo.out" }, 1.9);
+
+  // S2: Chart
+  tl.to("#s2-panel", { clipPath:"inset(0 0% 0 0)", duration:0.6, ease:"expo.out" }, 7.2);
+  tl.from("#s2-hprice", { y:18, opacity:0, duration:0.5, ease:"expo.out" }, 7.3);
+  tl.from("#s2-hchg",   { x:16, opacity:0, duration:0.4, ease:"expo.out" }, 7.5);
+  tl.from(".s2-tag",    { opacity:0, duration:0.4 }, 7.2);
+  tl.from("#sp1", { x:28, opacity:0, duration:0.45, ease:"expo.out" }, 7.55);
+  tl.from("#sp2", { x:28, opacity:0, duration:0.45, ease:"expo.out" }, 7.78);
+  tl.from("#sp3", { x:28, opacity:0, duration:0.45, ease:"expo.out" }, 8.01);
+  tl.from("#s2-badge", { x:28, opacity:0, duration:0.4, ease:"power2.out" }, 8.28);
+  // Signal dot pulse
+  tl.to("#s2-bdot", { scale:1.9, opacity:0.35, duration:0.55,
+    ease:"power2.out", yoyo:true, repeat:13 }, 8.6);
+  // Candlesticks stagger in
+  tl.to(".candle", { opacity:1, stagger:0.055, duration:0.22, ease:"power2.out" }, 8.0);
+  // Area fill
+  tl.to("#s2-area", { opacity:1, duration:2.5, ease:"power2.out" }, 9.5);
+  // MA line draw
+  const maEl = document.getElementById("s2-ma");
+  if (maEl && maEl.getTotalLength) {
+    const ml = maEl.getTotalLength();
+    gsap.set(maEl, { strokeDasharray:ml, strokeDashoffset:ml });
+    tl.to(maEl, { strokeDashoffset:0, duration:3.8, ease:"power2.inOut" }, 8.4);
+  }
+  // Ticker scroll
+  const tkEl = document.getElementById("s2-ticker-i");
+  if (tkEl) {
+    const tw = tkEl.scrollWidth / 2;
+    tl.to(tkEl, { x:-tw, duration:22, ease:"none" }, 7);
+  }
+
+  // S3: Context breakdown
+  // Scan line sweeps down
+  tl.to("#s3-scan", { opacity:1, y:1080, duration:0.55, ease:"power2.in" }, 24.1);
+  tl.set("#s3-scan", { opacity:0 }, 24.65);
+  // HUD bars
+  tl.to("#s3-topbar", { opacity:1, duration:0.3 }, 24.2);
+  tl.to("#s3-botbar", { opacity:1, duration:0.3 }, 24.3);
+  // Columns stagger in
+  tl.to("#s3c1", { opacity:1, y:0, duration:0.5, ease:"expo.out" }, 24.4);
+  tl.from("#s3c1", { y:40 }, 24.4);
+  tl.to("#s3c2", { opacity:1, y:0, duration:0.5, ease:"expo.out" }, 24.62);
+  tl.from("#s3c2", { y:40 }, 24.62);
+  tl.to("#s3c3", { opacity:1, y:0, duration:0.5, ease:"expo.out" }, 24.84);
+  tl.from("#s3c3", { y:40 }, 24.84);
+
+  // S4: Summary + fade to black
+  tl.from("#s4-eye",   { opacity:0, duration:0.4 }, 33.3);
+  tl.from("#s4-txt",   { y:28, opacity:0, duration:0.6, ease:"power3.out" }, 33.5);
+  tl.to("#s4-rule",    { width:480, duration:0.6, ease:"expo.out" }, 34.3);
+  tl.from("#s4-brand", { opacity:0, duration:0.4 }, 34.8);
+  tl.to("#s4-ov",      { opacity:1, duration:1.3, ease:"power2.in" }, 36.5);
+
+  // Auto-inject shimmer masks
+  document.querySelectorAll(".shimmer-sweep-target").forEach(el => {
+    if (!el.querySelector(".shimmer-mask")) {
+      const m = document.createElement("div");
+      m.className = "shimmer-mask";
+      el.appendChild(m);
+    }
+  });
+  // Shimmer sweep on price text during S1 (t=1.2 → 1.8s)
+  tl.fromTo("#s1-price", {"--shimmer-pos":"-20%"}, {"--shimmer-pos":"120%",
+    duration:0.8, ease:"power2.inOut"}, 1.2);
+  // Shimmer on asset name (t=1.0 → 1.6s)
+  tl.fromTo("#s1-asset", {"--shimmer-pos":"-20%"}, {"--shimmer-pos":"120%",
+    duration:0.7, ease:"power2.inOut"}, 1.0);
+window.__timelines["root"] = tl;
+</script>
+</body>
+</html>
