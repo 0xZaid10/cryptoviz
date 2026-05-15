@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_22", "ffmpeg", "python312"]
+
+[phases.install]
+cmds = [
+  "pip install openai websockets aiohttp numpy python-telegram-bot posthog kokoro-onnx soundfile",
+  "npm install -g pptxgenjs"
+]
+
+[start]
+cmd = "python main.py"

@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+
+# Generated videos — can be large
+renders/
+
+# Temp audio
+/tmp/cryptoviz_audio/
+
+# Hyperframes temp
+compositions/a*/
+compositions/[0-9]*/
+
+# Debug artifacts
+debug_composition.html
+transcript.json
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
